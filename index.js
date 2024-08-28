@@ -14,3 +14,7 @@ app.use(cookieParser())
 app.get('/', (req, res) => {
     res.send('client server ok')
 })
+
+app.listen(port, () => {
+    console.log('port is running:', port);
+})
