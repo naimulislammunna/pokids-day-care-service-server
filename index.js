@@ -10,3 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser())
+
+app.get('/', (req, res) => {
+    res.send('client server ok')
+})
