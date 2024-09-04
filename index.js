@@ -4,7 +4,7 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
-const port = process.env.port || 3000;
+const port = process.env.port || 4000;
 
 const app = express();
 app.use(cors());
@@ -39,6 +39,12 @@ async function run() {
             const cursor = await collection.find().toArray();
             res.send(cursor)
         });
+        app.post('/add-service', async (req, res) => {
+            const result = req.body;
+            // console.log(result);
+            const query = await collection.insertOne(result);
+            res.send(query);
+          })
 
 
     } finally {
