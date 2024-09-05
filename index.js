@@ -33,18 +33,31 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         await client.connect();
-        const collection = client.db('pokids').collection('services');
+        const serviceCollection = client.db('pokids').collection('services');
+        const bookedCollection = client.db('pokids').collection('booked');
+
+        app.get('/services/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await serviceCollection.findOne(query);
+            res.send(result);
+            
+          })
 
         app.get('/services', async(req, res)=>{
-            const cursor = await collection.find().toArray();
+            const cursor = await serviceCollection.find().toArray();
             res.send(cursor)
         });
+
         app.post('/add-service', async (req, res) => {
             const result = req.body;
-            // console.log(result);
-            const query = await collection.insertOne(result);
-            res.send(query);
+            const query = await serviceCollection.insertOne(result);
           })
+
+        app.post('/booked-service', async (req, res) => {
+            const result = req.body;
+            const query = await bookedCollection.insertOne(result);
+        })
 
 
     } finally {
