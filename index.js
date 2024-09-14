@@ -49,6 +49,31 @@ async function run() {
             res.send(cursor)
         });
 
+        app.get('/my-services', async (req, res) => {
+            const email = req.query.email;
+            console.log("getee", email);
+            
+            let query = {};
+            if (req.query?.email) {
+                query = {email: email}
+            }
+            
+            const cursor = await serviceCollection.find(query).toArray();
+            res.send(cursor);
+            
+          })
+          
+        app.get('/booked-service', async (req, res) => {
+            const email = req.query.email;
+            let query = {};
+            if (req.query?.email) {
+                query = {my_email: email}
+            } 
+            const cursor = await bookedCollection.find(query).toArray();
+            res.send(cursor);
+            
+          })
+
         app.post('/add-service', async (req, res) => {
             const result = req.body;
             const query = await serviceCollection.insertOne(result);
@@ -57,7 +82,19 @@ async function run() {
         app.post('/booked-service', async (req, res) => {
             const result = req.body;
             const query = await bookedCollection.insertOne(result);
+            res.send({message: 'Booked Service'})
         })
+
+        app.delete('/my-services/:id', async(req, res) =>{
+            const id = req.params.id;
+            // console.log('please delete', id);
+      
+            const query = {_id : new ObjectId(id)};
+            const result = await serviceCollection.deleteOne(query);
+            console.log(result);
+            res.send(result)
+        })
+
 
 
     } finally {
