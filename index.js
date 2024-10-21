@@ -4,7 +4,7 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
-const port = process.env.port || 4000;
+const port = process.env.port || 5000;
 
 const app = express();
 app.use(cors());
@@ -32,74 +32,109 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        
         const serviceCollection = client.db('pokids').collection('services');
         const bookedCollection = client.db('pokids').collection('booked');
 
-        app.get('/services/:id', async(req, res) => {
+        app.get('/services/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await serviceCollection.findOne(query);
             res.send(result);
-            
-          })
 
-        app.get('/services', async(req, res)=>{
-            const cursor = await serviceCollection.find().toArray();
-            res.send(cursor)
+        })
+
+        app.get('/services', async (req, res) => {
+            const page = parseInt(req.query.page) - 1;
+            const size = parseInt(req.query.size);
+            const search = req.query.search;
+            let query = {
+                service_name: {$regex: search, $options: 'i'}
+            }
+            
+            const skip = page * size;
+            
+            const cursor = await serviceCollection.find(query).skip(skip).limit(size).toArray();
+            res.send(cursor);
+        });
+
+        app.get('/count-services', async (req, res) => {
+            const search = req.query.search;
+            let query = {
+                service_name: {$regex: search, $options: 'i'}
+            }
+            const count = await serviceCollection.countDocuments(query);
+            
+            res.send({count})
         });
 
         app.get('/my-services', async (req, res) => {
             const email = req.query.email;
-            console.log("getee", email);
-            
             let query = {};
             if (req.query?.email) {
-                query = {email: email}
+                query = { email: email }
             }
-            
+
             const cursor = await serviceCollection.find(query).toArray();
             res.send(cursor);
-            
-          })
-          
+
+        })
+
         app.get('/booked-service', async (req, res) => {
             const email = req.query.email;
+
             let query = {};
             if (req.query?.email) {
-                query = {my_email: email}
-            } 
+                query = { 'data.my_email': email }
+            }
             const cursor = await bookedCollection.find(query).toArray();
             res.send(cursor);
-            
-          })
+
+        })
 
         app.post('/add-service', async (req, res) => {
-            const result = req.body;
-            const query = await serviceCollection.insertOne(result);
-          })
+            const query = req.body;
+            const result = await serviceCollection.insertOne(query);
+            res.send(result)
+        })
 
         app.post('/booked-service', async (req, res) => {
             const result = req.body;
             const query = await bookedCollection.insertOne(result);
-            res.send({message: 'Booked Service'})
+            res.send({ message: 'Booked Service' })
         })
 
-        app.delete('/my-services/:id', async(req, res) =>{
+        app.delete('/my-services/:id', async (req, res) => {
             const id = req.params.id;
-            // console.log('please delete', id);
-      
-            const query = {_id : new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await serviceCollection.deleteOne(query);
             console.log(result);
             res.send(result)
         })
 
+        // Update 
+        app.patch('/update-service/:id', async (req, res) => {
+            const id = req.params.id;
+            
+            const service = req.body;
+            const { service_name, service_area, price, description, image_url, email, displayName, photoURL } = service;
+
+            const filter = { _id: new ObjectId(id) };
+            const option = { upsert: true };
+            const updateService = {
+                $set: {
+                    service_name, service_area, price, description, image_url, email, displayName, photoURL 
+                }
+            }
+
+            const cursor = await serviceCollection.updateOne(filter, updateService, option);
+            res.send(cursor);
+        })
+
 
 
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+        
     }
 }
 run().catch(console.dir);
